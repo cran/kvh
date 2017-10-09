@@ -1,0 +1,4 @@
+useDynLib(kvh, .registration=TRUE)
+#exportPattern("^[[:alpha:]]+")
+export("obj2kvh", "kvh_read", "kvh_get_matrix")
+importFrom(Rcpp, evalCpp)
