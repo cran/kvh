@@ -10,3 +10,7 @@ test_that("example files",
         expect_equal(res[[bf]], saved[[bf]], info=f)
     }
 )
+test_that("obj_by_keys",
+    expect_equal(obj_by_keys(res[["hello_salut.kvh"]], c("salutation", "en")), "Hello, world!"),
+    expect_equal(obj_by_keys(res[["hello_salut.kvh"]], c("salutation", "zz")), NULL)
+)

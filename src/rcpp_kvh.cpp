@@ -52,12 +52,12 @@ bool escaped_eol(string& buf) {
     i=buf.size()-i-1;
     return i%2;
 }
-string kvh_get_line(ifstream& fin) {
-    // get a string from stream that ends without escaped eol character
+string kvh_get_line(ifstream& fin, size_t* ln) {
+    // get a string from stream that ends without escaped eol character and increment ln[0]
     string b, res;
     res="";
     bool first_read=true;
-    while ((first_read || escaped_eol(res)) && getline(fin, b)) {
+    while ((first_read || escaped_eol(res)) && getline(fin, b) && ++ln[0]) {
         if (!first_read && !fin.eof())
             res += '\n';
         res += b;
@@ -92,40 +92,40 @@ keyval kvh_parse_kv(string& line, size_t& lev) {
     }
     return(kv);
 }
-list_line kvh_read(ifstream& fin, size_t lev) {
+list_line kvh_read(ifstream& fin, size_t lev, size_t* ln) {
     // recursively read kvh file and return its content in a nested named list of character vectors
     List res=List::create() ;
     keyval kv;
     string line;
     list_line ll;
-    bool read_fin=true;
-    //size_t i=0;
+    bool read_stream=true;
+    size_t ln_save;
     CharacterVector nm(0);
     while (!fin.eof()) { // && i++ < 5) {
         // get full line (i.e. concat lines with escaped end_of_line)
-        if (read_fin)
-            line=kvh_get_line(fin);
+        if (read_stream)
+            line=kvh_get_line(fin, ln);
 //print(wrap(line));
 //print(wrap(fin.eof()));
         if ((line.size() == 0 && fin.eof()) || (lev && indent_lacking(line, lev))) {
             // current level is ended => go upper and let treat the line (already read) there
+            res.attr("ln")=(int) ln[0];
             res.attr("names")=nm;
             ll.res=res;
             ll.line=line;
             return ll;
         }
         kv=kvh_parse_kv(line, lev);
+        ln_save=ln[0];
 //print(wrap(List::create(_["l"]=line, _["k"]=kv.key, _["v"]=kv.val)));
+        read_stream=kv.tab_found;
         if (!kv.tab_found) {
             // tab is absent => we have to go deeper in the hierarchy level
-            ll=kvh_read(fin, lev+1);
+            ll=kvh_read(fin, lev+1, ln);
             kv.val=ll.res;
             line=ll.line;
-            read_fin=false; // don't read next line from fin as it was read in deeper level
-        } else {
-            // simple key-value pair
-            read_fin=true;
-        }
+        } // else simple key-value pair
+        kv.val.attr("ln")=(int) ln_save;
         res.push_back(kv.val);
         nm.push_back(kv.key);
     }
@@ -149,10 +149,11 @@ List kvh_read(string& fn) {
     // open file for binary reading
     ifstream fin;
     list_line ll;
+    size_t ln=0; // running line number in kvh file
     fin.open(fn.data(), ios::in | ios::binary);
     if (!fin)
         stop("cannot open file '%s' for reading", fn);
-    ll=kvh_read(fin, 0);
+    ll=kvh_read(fin, 0, &ln);
     fin.close();
     return ll.res;
 }

@@ -1,7 +1,7 @@
 # 2011-03-06 sokol
 # function to manipulate kvh format
-obj2kvh=function(obj, objname, conct=stdout(), indent=0) {
-#' Writing/adding an R object to kvh file.
+obj2kvh=function(obj, objname=NULL, conct=stdout(), indent=0) {
+#' Writing/Adding an R Object to KVH File.
 #'
 #' Formats an object before writing it in kvh file.
 #'
@@ -13,6 +13,8 @@ obj2kvh=function(obj, objname, conct=stdout(), indent=0) {
 #' Writing in a subfield of an already started key requires use of
 #' appropriate indent value. The file is started with indent=0 and
 #' every sub-field increments the indent by 1.
+#' If objname is NULL and obj is not a scalar value, the content of obj
+#' is written in kvh file without additional indent.
 #'
 #' @param obj an R object
 #' @param objname character object name to write in kvh file
@@ -39,21 +41,31 @@ obj2kvh=function(obj, objname, conct=stdout(), indent=0) {
       conct=file(conct, "wb")
       open_here=T
    }
-   if (is.vector(obj) && !is.list(obj) && (length(obj)==1 && is.null(names(obj)))) {
-      # unnamed scalar
+#browser()
+   if (length(obj) == 1 && ((is.vector(obj) && !is.list(obj)) || (is.numeric(obj) || is.character(obj) || is.logical(obj) || is.complex(obj)))) {
+      # scalar
       cat(rep("\t", indent, sep=""), sep="", file=conct);
-      cat(c(esc_kvh_k(objname), "\t", obj, "\n"), sep="", file=conct);
-   } else if (cls=="matrix" || substring(cls, nchar(cls)-5)=="Matrix") {
-      # matrix name
-      cat(rep("\t", indent, sep=""), sep="", file=conct);
+      cat(c(if (nchar(objname)) esc_kvh_k(objname) else "", "\t", esc_kvh_v(obj), "\n"), sep="", file=conct);
+      if (open_here) {
+         close(conct)
+      }
+      return(invisible(NULL))
+   }
+   # object name
+   cat(rep("\t", indent, sep=""), sep="", file=conct);
+   if (is.null(objname)) {
+      indent=indent-1
+   } else {
       cat(c(esc_kvh_k(objname), "\n"), sep="", file=conct);
+   }
+   if (cls=="matrix" || substring(cls, nchar(cls)-5) == "Matrix") {
       # place for row names
       cat(rep("\t", indent+1, sep=""), sep="", file=conct);
       cat("row_col\t", sep="", file=conct);
       # column names if any else column numbers
       if (dim(obj)[[2]] > 0) {
          if (length(dimnames(obj)[[2]])==dim(obj)[[2]]) {
-            cat(dimnames(obj)[[2]], sep="\t", file=conct);
+            cat(esc_kvh_v(dimnames(obj)[[2]]), sep="\t", file=conct);
          } else {
             cat(paste("V", 1:dim(obj)[[2]], sep=""), sep="\t", file=conct);
          }
@@ -62,9 +74,9 @@ obj2kvh=function(obj, objname, conct=stdout(), indent=0) {
       # row name followed by the row values
       if (dim(obj)[[1]] > 0) {
          if (length(dimnames(obj)[[1]])==dim(obj)[[1]]) {
-            rownms=dimnames(obj)[[1]];
+            rownms=esc_kvh_k(dimnames(obj)[[1]]);
          } else {
-            rownms=1:dim(obj)[[1]];
+            rownms=as.character(1:dim(obj)[[1]]);
          }
          for (i in 1:dim(obj)[[1]]) {
             cat(rep("\t", indent+1), sep="", file=conct);
@@ -74,14 +86,11 @@ obj2kvh=function(obj, objname, conct=stdout(), indent=0) {
       }
    } else if (is.vector(obj) && !is.list(obj) && NROW(obj) >= 1) {
       # vector
-      cat(rep("\t", indent, sep=""), sep="", file=conct);
-      cat(esc_kvh_k(objname), file=conct);
-      cat("\n", file=conct);
       # row name followed by the row values
       if (length(names(obj))==NROW(obj)) {
-         rownms=names(obj);
+         rownms=esc_kvh_k(names(obj));
       } else {
-         rownms=1:NROW(obj);
+         rownms=as.character(1:NROW(obj));
       }
       for (i in 1:NROW(obj)) {
          cat(rep("\t", indent+1), sep="", file=conct);
@@ -90,32 +99,20 @@ obj2kvh=function(obj, objname, conct=stdout(), indent=0) {
       }
    } else if (is.list(obj)) {
       # list => recursive call if the list is not empty
-      cat(rep("\t", indent, sep=""), sep="", file=conct);
-      cat(esc_kvh_k(objname), file=conct);
       if (length(obj) > 0) {
-         cat("\n", file=conct);
          # row name followed by the row values
          if (length(names(obj))==length(obj)) {
-            rownms=names(obj);
+            rownms=esc_kvh_k(names(obj));
          } else {
             rownms=1:length(obj);
          }
          for (i in 1:length(obj)) {
             obj2kvh(obj[[i]], rownms[i], conct, indent+1);
          }
-      } else {
-         cat("\t\n", file=conct);
       }
-   } else if (length(obj)==1 && (class(obj) == "numeric" ||
-         class(obj) == "character")) {
-      # scalar value
-      cat(rep("\t", indent, sep=""), sep="", file=conct);
-      cat(c(esc_kvh_k(objname), esc_kvh_v(format(obj[[1]]))), sep="\t", file=conct);
-      cat("\n", file=conct);
    } else {
       # unlnown type, write its string value
-      cat(rep("\t", indent, sep=""), sep="", file=conct);
-      cat(c(esc_kvh_k(objname), esc_kvh_v(format(obj))), sep="\t", file=conct);
+      cat(rep("", indent+1), esc_kvh_v(format(obj)), sep="\t", file=conct);
       cat("\n", file=conct);
    }
    if (open_here) {
@@ -124,9 +121,25 @@ obj2kvh=function(obj, objname, conct=stdout(), indent=0) {
    return(invisible(NULL))
 }
 esc_kvh_k=function(s) {
+#' Escape Special Characters in a key
+#'
+#' Escape Tabs, Newlines and Backslashes in a string which will be used as a key in a KVH file.
+#'
+#' Escape is done by butting a backslash before a special character.'
+#'
+#' @param s string
+#' @return escaped string
    return(gsub("([\t\\\n])", "\\\\\\1", s));
 }
 esc_kvh_v=function(s) {
+#' Escape Special Characters in a value
+#'
+#' Escape Newlines and Backslashes in a string which will be used as a key in a KVH file.
+#'
+#' Escape is done by butting a backslash before a special character.'
+#'
+#' @param s string
+#' @return escaped string
    return(gsub("([\\\n])", "\\\\\\1", s));
 }
 kvh2list=function(fp, lev=0, indent=0) {
@@ -168,7 +181,7 @@ kvh2list=function(fp, lev=0, indent=0) {
    # algorithm:
    # advance to requested indent (=level)
    # if not sucsessful return an empty list
-   # read a key 
+   # read a key
    # if sep==\t read value
    # elif sep=\n
    #     recursive call
@@ -374,12 +387,12 @@ kvh_get_matrix=function(f, v) {
 #'
 #' @param f connection from which kvh file can be read
 #' @param v character vector of key-subkeys pointing to a matrix
-#' 
+#'
 #' @return matrix read from kvh
 
    # return a plain matrix stored in the field v of a kvh file f.
    # v can be a vector of subfield keys.
-   
+
    # read the file in a vector
    cont=readLines(f)
    ncont=length(cont)
@@ -418,4 +431,21 @@ kvh_get_matrix=function(f, v) {
       dimnames(d)=dn
    }
    return(d)
+}
+
+obj_by_keys=function(li, keys) {
+#' Get Object Identified by its Keys.
+#'
+#' Given a named nested list returned by kvh_read(), get a particular item from it.
+#' The object is identified by a series of hierarchical keys, first key
+#' corresponds to the first hierarchical level, the second corresponds to
+#' the second and so on.
+#'
+#' @param li a named nested list returned by kvh_read()
+#' @param keys character vector naming key suites to identify an object
+#'
+#' @return an object corresponding to li[[keys[1]][[keys[2]][[...]]. Return
+#' NULL if non valid keys.
+
+   Reduce(`[[`, keys, init=li)
 }
