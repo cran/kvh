@@ -4,10 +4,19 @@
 \alias{kvh_read}
 \title{Parse file in KVH format}
 \usage{
-kvh_read(fn)
+kvh_read(fn, comment_str = "", strip_white = FALSE, skip_blank = FALSE)
 }
 \arguments{
 \item{fn}{character kvh file name.}
+
+\item{comment_str}{character optional comment string (default empty ""). If non empty, the comment
+string itself and everything following it on the line is ignored. Note that
+lines are first appended if end lines are escaped and then a search for a
+comment string is done.}
+
+\item{strip_white}{logical optional control of white spaces at the end of lines (default FALSE)}
+
+\item{skip_blank}{logical optional control of lines composed of only white characters after a possible stripping of a comment (default FALSE)}
 }
 \description{
 Returns a list with names formed form kvh keys and values formed from kvh values

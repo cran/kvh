@@ -8,8 +8,14 @@
 #' returned as a character string.
 #'
 #' @param fn character kvh file name.
+#' @param comment_str character optional comment string (default empty ""). If non empty, the comment
+#'   string itself and everything following it on the line is ignored. Note that
+#'   lines are first appended if end lines are escaped and then a search for a
+#'   comment string is done.
+#' @param strip_white logical optional control of white spaces at the end of lines (default FALSE)
+#' @param skip_blank logical optional control of lines composed of only white characters after a possible stripping of a comment (default FALSE)
 #' @export
-kvh_read <- function(fn) {
-    .Call(`_kvh_kvh_read`, fn)
+kvh_read <- function(fn, comment_str = "", strip_white = FALSE, skip_blank = FALSE) {
+    .Call(`_kvh_kvh_read`, fn, comment_str, strip_white, skip_blank)
 }
 

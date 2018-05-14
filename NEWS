@@ -1,3 +1,9 @@
+Version 1.2
+===========
+
+* 2018-05-14
+ - added optional parameters comment_str, strip_white and skip_blank to read_kvh()
+
 Version 1.1
 ===========
 

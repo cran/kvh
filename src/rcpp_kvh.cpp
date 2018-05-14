@@ -7,6 +7,8 @@ using namespace std;
 
 #include "../inst/include/kvh.h"
 
+static string whitespaces(" \t\f\v\n\r");
+
 // auxiliary functions
 string unescape(string s) {
     // unescape tab, newline and backslash
@@ -52,9 +54,10 @@ bool escaped_eol(string& buf) {
     i=buf.size()-i-1;
     return i%2;
 }
-string kvh_get_line(ifstream& fin, size_t* ln) {
+string kvh_get_line(ifstream& fin, size_t* ln, const string& comment_str, const bool strip_white) {
     // get a string from stream that ends without escaped eol character and increment ln[0]
     string b, res;
+    size_t pstr;
     res="";
     bool first_read=true;
     while ((first_read || escaped_eol(res)) && getline(fin, b) && ++ln[0]) {
@@ -62,6 +65,18 @@ string kvh_get_line(ifstream& fin, size_t* ln) {
             res += '\n';
         res += b;
         first_read=false;
+    }
+    if (comment_str.size() > 0) {
+        pstr=res.find(comment_str);
+        if (pstr != string::npos && (b=res.substr(0, pstr), true) && !escaped_eol(b)) // stip out non escaped comments
+            res=b;
+    }
+    if (strip_white) {
+        pstr=res.find_last_not_of(whitespaces);
+        if (pstr != string::npos)
+            res.erase(pstr+1);
+        else
+            res.clear(); // res is all whitespace
     }
     return res;
 }
@@ -85,14 +100,14 @@ keyval kvh_parse_kv(string& line, size_t& lev) {
         bs=0;
     }
     if (i == line.size()) {
-        // no tab found => all the string goes to the key
+        // no tab found => the whole string goes to the key
         kv.key=unescape(line.substr(lev));
         kv.val="";
         kv.tab_found=false;
     }
     return(kv);
 }
-list_line kvh_read(ifstream& fin, size_t lev, size_t* ln) {
+list_line kvh_read(ifstream& fin, size_t lev, size_t* ln, const string& comment_str, const bool strip_white, const bool skip_blank) {
     // recursively read kvh file and return its content in a nested named list of character vectors
     List res=List::create() ;
     keyval kv;
@@ -104,9 +119,11 @@ list_line kvh_read(ifstream& fin, size_t lev, size_t* ln) {
     while (!fin.eof()) { // && i++ < 5) {
         // get full line (i.e. concat lines with escaped end_of_line)
         if (read_stream)
-            line=kvh_get_line(fin, ln);
+            line=kvh_get_line(fin, ln, comment_str, strip_white);
 //print(wrap(line));
 //print(wrap(fin.eof()));
+        if (skip_blank && (line.size() == 0 || (!strip_white && line.find_first_not_of(whitespaces) == string::npos)) && !fin.eof())
+            continue;
         if ((line.size() == 0 && fin.eof()) || (lev && indent_lacking(line, lev))) {
             // current level is ended => go upper and let treat the line (already read) there
             res.attr("ln")=(int) ln[0];
@@ -121,8 +138,8 @@ list_line kvh_read(ifstream& fin, size_t lev, size_t* ln) {
         read_stream=kv.tab_found;
         if (!kv.tab_found) {
             // tab is absent => we have to go deeper in the hierarchy level
-            ll=kvh_read(fin, lev+1, ln);
-            kv.val=ll.res;
+            ll=kvh_read(fin, lev+1, ln, comment_str, strip_white, skip_blank);
+            kv.val=(ll.res.size() == 0 ? "" : ll.res);
             line=ll.line;
         } // else simple key-value pair
         kv.val.attr("ln")=(int) ln_save;
@@ -141,11 +158,18 @@ list_line kvh_read(ifstream& fin, size_t lev, size_t* ln) {
 //' returned as a character string.
 //'
 //' @param fn character kvh file name.
+//' @param comment_str character optional comment string (default empty ""). If non empty, the comment
+//'   string itself and everything following it on the line is ignored. Note that
+//'   lines are first appended if end lines are escaped and then a search for a
+//'   comment string is done.
+//' @param strip_white logical optional control of white spaces at the end of lines (default FALSE)
+//' @param skip_blank logical optional control of lines composed of only white characters after a possible stripping of a comment (default FALSE)
 //' @export
 // [[Rcpp::export]]
-List kvh_read(string& fn) {
+List kvh_read(const string& fn, const string& comment_str="", const bool strip_white=false, const bool skip_blank=false) {
     // read kvh file and return its content in a nested named list of character vectors
-    
+    if (comment_str.find('\t') < string::npos || comment_str.find('\n') < string::npos)
+        stop("parameter 'comment_str' cannot have tabulation or new line characters");
     // open file for binary reading
     ifstream fin;
     list_line ll;
@@ -153,7 +177,7 @@ List kvh_read(string& fn) {
     fin.open(fn.data(), ios::in | ios::binary);
     if (!fin)
         stop("cannot open file '%s' for reading", fn);
-    ll=kvh_read(fin, 0, &ln);
+    ll=kvh_read(fin, 0, &ln, comment_str, strip_white, skip_blank);
     fin.close();
     return ll.res;
 }
