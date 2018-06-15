@@ -23,9 +23,9 @@ typedef struct {
 string unescape(string s);
 bool indent_lacking(string& buf, size_t& lev);
 bool escaped_eol(string& buf);
-string kvh_get_line(ifstream& fin, const string& comment_str, const bool strip_white);
-keyval kvh_parse_kv(string& line, size_t& lev);
-list_line kvh_read(ifstream& fin, size_t lev, const string& comment_str, const bool strip_white, const bool skip_blank);
-List kvh_read(string& fn, const string& comment_str="", const bool strip_white=true, const bool skip_blank=true);
+string kvh_get_line(ifstream& fin, const string& comment_str);
+inline keyval kvh_parse_kv(string& line, size_t& lev, const bool strip_white, const string& split_str);
+list_line kvh_read(ifstream& fin, size_t lev, const string& comment_str, const bool strip_white, const bool skip_blank, const string& split_str, const bool follow_url);
+RObject kvh_read(string fn, const string& comment_str, const bool strip_white, const bool skip_blank, const string& split_str, const bool follow_url);
 
 #endif

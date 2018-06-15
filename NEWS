@@ -1,3 +1,9 @@
+Version 1.3
+===========
+
+* 2018-06-14
+ - added optional parameters split_str and follow_url to read_kvh()
+
 Version 1.2
 ===========
 

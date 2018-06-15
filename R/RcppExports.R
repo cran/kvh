@@ -12,10 +12,12 @@
 #'   string itself and everything following it on the line is ignored. Note that
 #'   lines are first appended if end lines are escaped and then a search for a
 #'   comment string is done.
-#' @param strip_white logical optional control of white spaces at the end of lines (default FALSE)
+#' @param strip_white logical optional control of white spaces on both ends of keys and values (default FALSE)
 #' @param skip_blank logical optional control of lines composed of only white characters after a possible stripping of a comment (default FALSE)
+#' @param split_str character optional string by which a value string can be splitted in several strings (default: empty string, i.e. no splitting)
+#' @param follow_url logical optional control of recursive kvh reading and parsing. If set to TRUE and a value starts with 'file://' then the path following this prefix will be passed as argument 'fn' to another 'kvh_read()' call. The list returned by this last call will be affected to the corresponding key instead of the value 'file://...'. If a circular reference to some file is detected, a warning is emmited and the faulty value 'file://...' will be left without change. The rest of the file is proceeded as usual.
 #' @export
-kvh_read <- function(fn, comment_str = "", strip_white = FALSE, skip_blank = FALSE) {
-    .Call(`_kvh_kvh_read`, fn, comment_str, strip_white, skip_blank)
+kvh_read <- function(fn, comment_str = "", strip_white = FALSE, skip_blank = FALSE, split_str = "", follow_url = FALSE) {
+    .Call(`_kvh_kvh_read`, fn, comment_str, strip_white, skip_blank, split_str, follow_url)
 }
 
