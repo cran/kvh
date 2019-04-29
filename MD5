@@ -1,6 +1,6 @@
-9aff6b83f34bff14cdae3c1c2a5cbcd6 *DESCRIPTION
+25e6d70c080e01f7e00d846fcd36f3bd *DESCRIPTION
 ee1253c3b7cb2a2df88630b5ea937538 *NAMESPACE
-e9965f79568b015d882781f055296c74 *NEWS
+494185680548fd0a8713c9f0284b1651 *NEWS
 e7665866854f08e307be5e66d6f8ac2a *R/RcppExports.R
 8a578d7b6bb643e6c2000c75e4fa06cf *R/kvh.R
 3a8016efdaba4988d45eb86755067943 *README.md
@@ -20,7 +20,7 @@ efe3bb90acbd4394f56f936c76586f62 *man/kvh_read.Rd
 ece595b7001757c66f5020cc12997523 *man/obj_by_keys.Rd
 dd523d0b111592b4c69ebcfa3875b1d7 *src/Makevars
 03a28255386f835d0fe06b7a3f3faa9f *src/RcppExports.cpp
-45b18ac8dd1356792dbab66aeb32835b *src/rcpp_kvh.cpp
+8a0942fe3556deed413669e78e9b27dc *src/rcpp_kvh.cpp
 93585e7a451f6afabb2531c4cf3fbe22 *tests/testthat.R
 7568f5ae23b3a063585e462d3f14addc *tests/testthat/res.RData
 6c261833cc5a742dc490cdc6c7424498 *tests/testthat/test_kvh.R

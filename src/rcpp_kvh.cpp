@@ -6,6 +6,8 @@ using namespace Rcpp;
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <cstring>
+#include <cerrno>
 //#include <unistd.h> // get_working_dir()
 //#include <stdio.h>
 
@@ -345,7 +347,7 @@ RObject kvh_read(std::string fn, const std::string& comment_str="", const bool s
             bchar=NULL;
         }
 */
-        stop("kvh_read: cannot open file '%s' for reading for following reason: %s", fn, strerror(errno));
+        stop("kvh_read: cannot open file '%s' for reading for following reason: %s", fn, std::strerror(errno));
     }
 //    if (!bchar)
 //        bchar=(char*) malloc(bsize*sizeof(char));
