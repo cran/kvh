@@ -38,5 +38,7 @@ m=matrix(1:6,2,3);
 fcn=file("m.kvh", "w");
 obj2kvh(m, "m", fcn);
 close(fcn);
+# clean
+unlink("m.kvh")
 
 }

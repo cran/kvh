@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // kvh_read
 RObject kvh_read(std::string fn, const std::string& comment_str, const bool strip_white, const bool skip_blank, const std::string& split_str, const bool follow_url);
 RcppExport SEXP _kvh_kvh_read(SEXP fnSEXP, SEXP comment_strSEXP, SEXP strip_whiteSEXP, SEXP skip_blankSEXP, SEXP split_strSEXP, SEXP follow_urlSEXP) {

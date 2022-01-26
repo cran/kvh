@@ -1,9 +1,15 @@
+Version 1.4.2
+===========
+
+* 2022-01-26
+ - fixed logical tests of length > 1 (signaled by R Core team)
+ - added Copyright to DESCRIPTION
+
 Version 1.4.1
 ===========
 
 * 2019-04-28
  - fixed usage of errno and std::strerror()
-
 Version 1.4
 ===========
 

@@ -28,9 +28,11 @@ obj2kvh=function(obj, objname=NULL, conct=stdout(), indent=0) {
 #' fcn=file("m.kvh", "w");
 #' obj2kvh(m, "m", fcn);
 #' close(fcn);
+#' # clean
+#' unlink("m.kvh")
 #'
 
-   cls=class(obj);
+   cls=class(obj)[1L]; # we rely on the first name in classes only 
    indent=max(indent,0);
    open_here=FALSE
    if (class(conct)[1]=="character") {
@@ -384,6 +386,8 @@ kvh_get_matrix=function(f, v) {
 #' obj2kvh(list(comment="this is a test matrix",  m=diag(2)), "li", "test.kvh")
 #' # read it back
 #' mr=kvh_get_matrix(file("test.kvh"), c("li", "m"))
+#' # clean
+#' unlink("test.kvh")
 #'
 #' @param f connection from which kvh file can be read
 #' @param v character vector of key-subkeys pointing to a matrix
@@ -413,13 +417,13 @@ kvh_get_matrix=function(f, v) {
    } else {
       nend=ncont
    }
-   d=matrix(unlist(strsplit(cont[nstart:nend], "\t", fixed=TRUE)), byrow=T, nrow=nend-nstart+1)[,-(1:indent), drop=F]
+   d=matrix(unlist(strsplit(cont[nstart:nend], "\t", fixed=TRUE)), byrow=TRUE, nrow=nend-nstart+1)[,-(1:indent), drop=FALSE]
    rownames(d)=d[,1]
    if (rownames(d)[1]=="row_col") {
       colnames(d)=d[1,]
-      d=d[-1,-1,drop=F]
+      d=d[-1,-1,drop=FALSE]
    } else {
-      d=d[,-1,drop=F]
+      d=d[,-1,drop=FALSE]
    }
    dn=dimnames(d)
    wop=options()$warn

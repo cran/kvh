@@ -4,8 +4,14 @@
 \alias{kvh_read}
 \title{Parse file in KVH format}
 \usage{
-kvh_read(fn, comment_str = "", strip_white = FALSE,
-  skip_blank = FALSE, split_str = "", follow_url = FALSE)
+kvh_read(
+  fn,
+  comment_str = "",
+  strip_white = FALSE,
+  skip_blank = FALSE,
+  split_str = "",
+  follow_url = FALSE
+)
 }
 \arguments{
 \item{fn}{character kvh file name.}

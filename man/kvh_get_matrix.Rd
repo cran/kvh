@@ -26,5 +26,7 @@ rownames in the first column and colnames in the first row.
 obj2kvh(list(comment="this is a test matrix",  m=diag(2)), "li", "test.kvh")
 # read it back
 mr=kvh_get_matrix(file("test.kvh"), c("li", "m"))
+# clean
+unlink("test.kvh")
 
 }
