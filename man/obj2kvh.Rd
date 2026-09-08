@@ -11,7 +11,7 @@ obj2kvh(obj, objname = NULL, conct = stdout(), indent = 0)
 
 \item{objname}{character object name to write in kvh file}
 
-\item{conct}{connection opened for writing}
+\item{conct}{connection opened for writing or file name}
 
 \item{indent}{is tab offset for object name}
 }

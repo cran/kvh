@@ -1,14 +1,14 @@
 context("examples")
 dexample=system.file("examples", package="kvh")
 fexample=system(sprintf("ls -1 %s/*.kvh", dexample), intern=TRUE)
+fexample=setNames(fexample, basename(fexample))
 saved=readRDS("res.RData")
 res=list()
 test_that("example files",
-  for (f in fexample) {
-    bf=basename(f)
-    res[[bf]] <<- kvh_read(f)
-    expect_equivalent(res[[bf]], saved[[bf]], info=f)
-  }
+  mapply(names(fexample), fexample, FUN=function(nm, f) {
+    res[[nm]] <<- kvh_read(f)
+    expect_equivalent(res[[nm]], saved[[nm]], info=f)
+  })
 )
 test_that("obj_by_keys", {
   expect_equivalent(kvh::obj_by_keys(res[["hello_salut.kvh"]], c("salutation", "en")), "Hello, world!")
@@ -35,7 +35,7 @@ test_that("skip_blank", {
   expect_equivalent(length(res), 3, info="total skip blank")
 })
 
-# test commnets, stripping white and skipping blank
+# test comments, stripping white and skipping blank
 fc=file(fn, "wb")
 cat("a\tb # comment\n\t # comment on a blank line\nc\td", file=fc)
 close(fc)
@@ -46,7 +46,7 @@ test_that("comment strip & skip_blank", {
   expect_equivalent(length(res), 2, info="total comment strip & skip blank")
 })
 
-# test spliting value string by tabs
+# test splitting value string by tabs
 fc=file(fn, "wb")
 cat("a\tb1\tb2\\\tb2_too\tb3\n", file=fc)
 close(fc)
@@ -63,9 +63,20 @@ close(fc)
 fc=file(fn2, "wb")
 cat("k\tv\nbad nested ref\t file://", fn, " \n", sep="", file=fc)
 close(fc)
-res=kvh::kvh_read(fn, strip_white=TRUE, follow_url=TRUE)
+suppressWarnings(res <- kvh::kvh_read(fn, strip_white=TRUE, follow_url=TRUE))
 test_that("split value", {
   expect_equivalent(res[["a"]], list(k="v", `bad nested ref`=paste0("file://", fn)))
   expect_warning(kvh::kvh_read(fn, strip_white=TRUE, follow_url=TRUE), "kvh_read: detected circular reference to file ")
 })
 unlink(fn)
+
+# test key skipping
+rs=kvh::kvh_read(fexample["hello_salut.kvh"], keys2skip=list(c("salutation", "en")))
+r=kvh::kvh_read(fexample["hello_salut.kvh"], keys2skip=list(c("inexistent", "en")))
+rspe=kvh::kvh_read(fexample["specials.kvh"], keys2skip=list(c("key0", "key01")))
+test_that("key skipping", {
+  expect_equivalent(rs[["salutation"]][["fr"]], "Salut le monde !")
+  expect_equivalent(rs[["salutation"]][["en"]], NULL)
+  expect_equivalent(length(r[["salutation"]]), 2)
+  expect_equivalent(rspe[["key0"]][["key01"]], NULL)
+})

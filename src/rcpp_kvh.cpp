@@ -210,7 +210,7 @@ keyval kvh_parse_kv(std::string& line, size_t& lev, const bool strip_white, cons
     }
     return(kv);
 }
-list_line kvh_read(std::ifstream& fin, size_t lev, size_t* ln, const std::string& comment_str, const bool strip_white, const bool skip_blank, const std::string& split_str, const bool follow_url) {
+list_line kvh_read(std::ifstream& fin, size_t lev, size_t* ln, const std::string& comment_str, const bool strip_white, const bool skip_blank, const std::string& split_str, const bool follow_url, const std::vector<std::vector<std::string>>& keys2skip={}) {
     // recursively read kvh file and return its content in a nested named list of character vectors
     List res=List::create() ;
     keyval kv;
@@ -219,6 +219,8 @@ list_line kvh_read(std::ifstream& fin, size_t lev, size_t* ln, const std::string
     bool read_stream=true;
     size_t ln_save;
     CharacterVector nm(0);
+    std::vector<std::vector<std::string>> subk2skip(keys2skip.size());
+    bool kv_skip=false;
     while (!fin.eof()) { // && i++ < 5) {
         // get full line (i.e. concat lines with escaped end_of_line)
         if (read_stream)
@@ -238,24 +240,49 @@ list_line kvh_read(std::ifstream& fin, size_t lev, size_t* ln, const std::string
             return ll;
         }
         kv=kvh_parse_kv(line, lev, strip_white, split_str);
+//Rcout << "kv.key=" << kv.key << "\n";
         ln_save=ln[0];
+        // check if the key is to skip
+        if (keys2skip.size() > 0) {
+            // find this key at the first position of the keys2skip
+            for (size_t i=0; i < keys2skip.size(); i++) {
+                const std::vector<std::string>& v=keys2skip[i];
+                if (v.size() > 0) {
+                    if (v[0] == kv.key) {
+                        if (v.size() == 1) {
+                            // this is the last key in the list => skip this kv
+                            kv_skip=true;
+                            subk2skip.clear();
+                            break;
+                        }
+                        // found in long vector => remove this key from vector for deeper levels
+                        subk2skip.emplace_back(v.begin() + 1, v.end());
+                    }
+                }
+            }
+        }
 //print(wrap(List::create(_["l"]=line, _["k"]=kv.key, _["v"]=kv.val)));
         read_stream=kv.tab_found;
         if (!kv.tab_found) {
             // tab is absent => we have to go deeper in the hierarchy level
-            ll=kvh_read(fin, lev+1, ln, comment_str, strip_white, skip_blank, split_str, follow_url);
+            if (kv_skip) {
+                ll=kvh_read(fin, lev+1, ln, comment_str, strip_white, skip_blank, split_str, false, {});
+            } else {
+                ll=kvh_read(fin, lev+1, ln, comment_str, strip_white, skip_blank, split_str, follow_url, subk2skip);
+            }
             kv.val=(ll.res.size() == 0 ? "" : ll.res);
             line=ll.line;
         } // else simple key-value pair
-        if (follow_url && kv.val.sexp_type() == STRSXP) {
-//Rcout << "follow_url\n";
+        if (!kv_skip && follow_url && kv.val.sexp_type() == STRSXP) {
             CharacterVector cval(kv.val);
             if (cval.size() == 1) {
                 std::string sval=as<std::string>(cval[0]);
                 if (sval.substr(0, 7) == "file://") {
+//Rcout << "follow_url; lev=" << lev << "; kv.key=" << kv.key << "; sval=" << sval << "\n";
                     sval=sval.substr(7);
 //Rcout << "trying to kvh_read '" << sval << "'\n";
-                    kv.val=kvh_read(sval, comment_str, strip_white, skip_blank, split_str, follow_url);
+                    kv.val=kvh_read(sval, comment_str, strip_white, skip_blank, split_str, follow_url, List(subk2skip.begin(), subk2skip.end()));
+//Rcout << "done.\n";
                     if (kv.val.isNULL()) {
 //Rcout << "set kv.val back to file://...\n";
                         kv.val=cval;
@@ -263,9 +290,14 @@ list_line kvh_read(std::ifstream& fin, size_t lev, size_t* ln, const std::string
                 }
             }
         } // else if (kv.val.sexp_type() == STRSXP) { CharacterVector cval(kv.val); std::string sval=as<std::string>(cval[0]); if (sval.substr(0, 7) == "file://") Rcout << "not following '" << sval << "'\n";}
-        kv.val.attr("ln")=(int) ln_save;
-        res.push_back(kv.val);
-        nm.push_back(kv.key);
+        if (kv_skip) {
+            kv_skip=false;
+            subk2skip.clear();
+        } else {
+            kv.val.attr("ln")=(int) ln_save;
+            res.push_back(kv.val);
+            nm.push_back(kv.key);
+        }
     }
     res.attr("names")=nm;
     ll.res=res;
@@ -286,10 +318,14 @@ list_line kvh_read(std::ifstream& fin, size_t lev, size_t* ln, const std::string
 //' @param strip_white logical optional control of white spaces on both ends of keys and values (default FALSE)
 //' @param skip_blank logical optional control of lines composed of only white characters after a possible stripping of a comment (default FALSE)
 //' @param split_str character optional string by which a value string can be splitted in several strings (default: empty string, i.e. no splitting)
-//' @param follow_url logical optional control of recursive kvh reading and parsing. If set to TRUE and a value starts with 'file://' then the path following this prefix will be passed as argument 'fn' to another 'kvh_read()' call. The list returned by this last call will be affected to the corresponding key instead of the value 'file://...'. If a circular reference to some file is detected, a warning is emmited and the faulty value 'file://...' will be left without change. The rest of the file is proceeded as usual. If a path is relative one (i.e. not strating with `/` neither 'C:/' or alike on windows paltform) then its meant relative to the location of the parent kvh file, not the current working directory.
+//' @param follow_url logical optional control of recursive kvh reading and parsing. If set to TRUE and a value starts with 'file://' then the path following this prefix will be passed as argument 'fn' to another 'kvh_read()' call. The list returned by this last call will be affected to the corresponding key instead of the value 'file://...'. If a circular reference to some file is detected, a warning is emitted and the faulty value 'file://...' will be left without change. The rest of the file is proceeded as usual. If a path is relative one (i.e. not starting with `/` neither 'C:/' or alike on windows paltform) then it is meant relative to the location of the parent kvh file, not the current working directory.
+//' @param keys2skip list of character vectors. Each vector is sequence of nested keys to be skipped (default: NULL).
+//'
+//' @details
+//' If a key is to be skipped, its content is read and parsed (to keep the right line numbering), urls links are not followed but its value is not set in the resulting list.
 //' @export
 // [[Rcpp::export]]
-RObject kvh_read(std::string fn, const std::string& comment_str="", const bool strip_white=false, const bool skip_blank=false, const std::string& split_str="", const bool follow_url=false) {
+RObject kvh_read(std::string fn, const std::string& comment_str="", const bool strip_white=false, const bool skip_blank=false, const std::string& split_str="", const bool follow_url=false, List keys2skip=R_NilValue) {
     if (fn.size() == 0)
         stop("kvh_read: file name is empty");
     // read kvh file and return its content in a nested named list of character vectors
@@ -304,6 +340,12 @@ RObject kvh_read(std::string fn, const std::string& comment_str="", const bool s
         stop("kvh_read: parameter 'comment_str' cannot have tabulation or new line characters in it");
     }
 //Rcout << "follow_url=" << follow_url << "\n";
+    int n = keys2skip.size();
+    std::vector<std::vector<std::string>> vk2skip(n);
+    for (int i = 0; i < n; ++i) {
+        vk2skip[i] = as<std::vector<std::string>>(keys2skip[i]);
+    }
+
     // check for nested references if follow_url=true
     static std::set<std::string> read_files;
 //Rcout << "cwd='" << get_current_dir_name() << "'\n";
@@ -351,7 +393,7 @@ RObject kvh_read(std::string fn, const std::string& comment_str="", const bool s
     }
 //    if (!bchar)
 //        bchar=(char*) malloc(bsize*sizeof(char));
-    ll=kvh_read(fin, 0, &ln, comment_str, strip_white, skip_blank, split_str, follow_url);
+    ll=kvh_read(fin, 0, &ln, comment_str, strip_white, skip_blank, split_str, follow_url, vk2skip);
     fin.close();
     if (follow_url) {
         read_files.erase(npath);

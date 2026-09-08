@@ -10,7 +10,8 @@ kvh_read(
   strip_white = FALSE,
   skip_blank = FALSE,
   split_str = "",
-  follow_url = FALSE
+  follow_url = FALSE,
+  keys2skip = NULL
 )
 }
 \arguments{
@@ -27,10 +28,15 @@ comment string is done.}
 
 \item{split_str}{character optional string by which a value string can be splitted in several strings (default: empty string, i.e. no splitting)}
 
-\item{follow_url}{logical optional control of recursive kvh reading and parsing. If set to TRUE and a value starts with 'file://' then the path following this prefix will be passed as argument 'fn' to another 'kvh_read()' call. The list returned by this last call will be affected to the corresponding key instead of the value 'file://...'. If a circular reference to some file is detected, a warning is emmited and the faulty value 'file://...' will be left without change. The rest of the file is proceeded as usual. If a path is relative one (i.e. not strating with `/` neither 'C:/' or alike on windows paltform) then its meant relative to the location of the parent kvh file, not the current working directory.}
+\item{follow_url}{logical optional control of recursive kvh reading and parsing. If set to TRUE and a value starts with 'file://' then the path following this prefix will be passed as argument 'fn' to another 'kvh_read()' call. The list returned by this last call will be affected to the corresponding key instead of the value 'file://...'. If a circular reference to some file is detected, a warning is emitted and the faulty value 'file://...' will be left without change. The rest of the file is proceeded as usual. If a path is relative one (i.e. not starting with `/` neither 'C:/' or alike on windows paltform) then it is meant relative to the location of the parent kvh file, not the current working directory.}
+
+\item{keys2skip}{list of character vectors. Each vector is sequence of nested keys to be skipped (default: NULL).}
 }
 \description{
 Returns a list with names formed form kvh keys and values formed from kvh values
 If a kvh value has sub-keys, it is returned as a nested list. Otherwise it is
 returned as a character string.
+}
+\details{
+If a key is to be skipped, its content is read and parsed (to keep the right line numbering), urls links are not followed but its value is not set in the resulting list.
 }

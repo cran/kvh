@@ -1,46 +1,39 @@
-Version 1.4.2
-===========
+# Package `kvh` Updates
 
-* 2022-01-26
- - fixed logical tests of length > 1 (signaled by R Core team)
- - added Copyright to DESCRIPTION
+## Version 1.5 (2026-09-07)
 
-Version 1.4.1
-===========
+* added parameter `keys2skip` to `kvh_read()` to optionally skip some key chain in the hierarchy
 
-* 2019-04-28
- - fixed usage of errno and std::strerror()
-Version 1.4
-===========
+## Version 1.4.2 (2022-01-26)
 
-* 2019-04-23
- - fixed usage of relative paths when follow_url is true
+* Fixed logical tests of length > 1 (signaled by R Core team).
+* Added Copyright to DESCRIPTION.
 
-Version 1.3
-===========
+## Version 1.4.1 (2019-04-28)
 
-* 2018-06-14
- - added optional parameters split_str and follow_url to read_kvh()
+* Fixed usage of errno and std::strerror().
 
-Version 1.2
-===========
+## Version 1.4.0 (2019-04-23)
 
-* 2018-05-14
- - added optional parameters comment_str, strip_white and skip_blank to read_kvh()
+* Fixed usage of relative paths when `follow_url` is true.
 
-Version 1.1
-===========
+## Version 1.3.0 (2018-06-14)
 
-* 2017-12-06
- - added integer attribute 'ln' (line number) to values returned by kvh_read()
- - added new function obj_by_keys()
- - added BugReports to DESCRIPTION
- - added README.md for github
- - added export of esc_kvh_k() and esc_kvh_v() functions
- - parameter 'objname' may be set to NULL (default) and ignored
+* Added optional parameters `split_str` and `follow_url` to `read_kvh()`.
 
-Version 1.0.1
-=============
+## Version 1.2.0 (2018-05-14)
 
-* 2017-10-02
- - initial commit to CRAN
+* Added optional parameters `comment_str`, `strip_white` and `skip_blank` to `read_kvh()`.
+
+## Version 1.1.0 (2017-12-06)
+
+* Added integer attribute `ln` (line number) to values returned by `kvh_read()`.
+* Added new function `obj_by_keys()`.
+* Added BugReports to DESCRIPTION.
+* Added README.md for github.
+* Added export of `esc_kvh_k()` and `esc_kvh_v()` functions.
+* Parameter `objname` may be set to NULL (default) and ignored.
+
+## Version 1.0.1 (2017-10-02)
+
+* Initial commit to CRAN.

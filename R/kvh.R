@@ -18,7 +18,7 @@ obj2kvh=function(obj, objname=NULL, conct=stdout(), indent=0) {
 #'
 #' @param obj an R object
 #' @param objname character object name to write in kvh file
-#' @param conct connection opened for writing
+#' @param conct connection opened for writing or file name
 #' @param indent is tab offset for object name
 #'
 #' @return None
@@ -31,22 +31,25 @@ obj2kvh=function(obj, objname=NULL, conct=stdout(), indent=0) {
 #' # clean
 #' unlink("m.kvh")
 #'
-
+   if (length(objname) > 1L)
+      stop("'objname' cannot be of length > 1, got length=", length(objname))
    cls=class(obj)[1L]; # we rely on the first name in classes only 
    indent=max(indent,0);
    open_here=FALSE
    if (class(conct)[1]=="character") {
       # open a file for writing if non existent yet otherwise raise an error
       if (file.exists(conct)) {
-         stop(sprintf("Cannot write to existent file '%s'. To overwrite it, open a connection in 'w' or 'wb' mode.", conct))
+         stop(sprintf("Cannot overwrite existing file '%s'. To overwrite it, open a connection in 'w' or 'wb' mode.", conct))
       }
       conct=file(conct, "wb")
-      open_here=T
+      open_here=TRUE
    }
 #browser()
    if (length(obj) == 1 && ((is.vector(obj) && !is.list(obj)) || (is.numeric(obj) || is.character(obj) || is.logical(obj) || is.complex(obj)))) {
       # scalar
       cat(rep("\t", indent, sep=""), sep="", file=conct);
+      # print the key. It requires "\n" or "\t" in next code depending on if the value
+      # has an hierarchy or not.
       cat(c(if (nchar(objname)) esc_kvh_k(objname) else "", "\t", esc_kvh_v(obj), "\n"), sep="", file=conct);
       if (open_here) {
          close(conct)
@@ -58,9 +61,10 @@ obj2kvh=function(obj, objname=NULL, conct=stdout(), indent=0) {
    if (is.null(objname)) {
       indent=indent-1
    } else {
-      cat(c(esc_kvh_k(objname), "\n"), sep="", file=conct);
+      cat(esc_kvh_k(objname), sep="", file=conct);
    }
    if (cls=="matrix" || substring(cls, nchar(cls)-5) == "Matrix") {
+      cat("\n", file=conct)
       # place for row names
       cat(rep("\t", indent+1, sep=""), sep="", file=conct);
       cat("row_col\t", sep="", file=conct);
@@ -88,6 +92,7 @@ obj2kvh=function(obj, objname=NULL, conct=stdout(), indent=0) {
       }
    } else if (is.vector(obj) && !is.list(obj) && NROW(obj) >= 1) {
       # vector
+      cat("\n", file=conct)
       # row name followed by the row values
       if (length(names(obj))==NROW(obj)) {
          rownms=esc_kvh_k(names(obj));
@@ -101,6 +106,7 @@ obj2kvh=function(obj, objname=NULL, conct=stdout(), indent=0) {
       }
    } else if (is.list(obj)) {
       # list => recursive call if the list is not empty
+      cat("\n", file=conct)
       if (length(obj) > 0) {
          # row name followed by the row values
          if (length(names(obj))==length(obj)) {
@@ -113,8 +119,8 @@ obj2kvh=function(obj, objname=NULL, conct=stdout(), indent=0) {
          }
       }
    } else {
-      # unlnown type, write its string value
-      cat(rep("", indent+1), esc_kvh_v(format(obj)), sep="\t", file=conct);
+      # unknown type, write its string value
+      cat("", esc_kvh_v(format(obj)), sep="\t", file=conct);
       cat("\n", file=conct);
    }
    if (open_here) {
