@@ -1,8 +1,8 @@
 Package: kvh
 Type: Package
 Title: Read/Write Files in Key-Value-Hierarchy Format
-Version: 1.5.0
-Date: 2026-09-07
+Version: 1.5.1
+Date: 2026-10-28
 Authors@R: person(given = "Serguei",
                     family = "Sokol",
                     role = c("aut", "cre"),
@@ -22,7 +22,7 @@ Biarch: yes
 RoxygenNote: 7.3.3
 Encoding: UTF-8
 Copyright: 2017-2026 INRAE/INSA/CNRS
-Packaged: 2026-09-08 15:17:34 UTC; sokol
+Packaged: 2026-10-29 07:42:56 UTC; sokol
 Author: Serguei Sokol [aut, cre]
 Repository: CRAN
-Date/Publication: 2026-09-08 16:20:02 UTC
+Date/Publication: 2026-10-30 13:40:40 UTC

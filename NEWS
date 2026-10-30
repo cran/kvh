@@ -1,5 +1,9 @@
 # Package `kvh` Updates
 
+## Version 1.5.1 (2026-10-28)
+
+* fixed set of read files if follow_url=true and in a previous read an error occurred
+
 ## Version 1.5 (2026-09-07)
 
 * added parameter `keys2skip` to `kvh_read()` to optionally skip some key chain in the hierarchy

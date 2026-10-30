@@ -7,6 +7,15 @@
 //using namespace std;
 using namespace Rcpp;
 
+// macro for multipf check of file existence
+#ifdef _WIN32
+#include <io.h>
+#define EXISTS(f) (_access(f, 0) == 0)
+#else
+#include <unistd.h>
+#define EXISTS(f) (access(f, 0) == 0)
+#endif
+
 // type declarations
 typedef struct {
     std::string key;

@@ -64,11 +64,26 @@ fc=file(fn2, "wb")
 cat("k\tv\nbad nested ref\t file://", fn, " \n", sep="", file=fc)
 close(fc)
 suppressWarnings(res <- kvh::kvh_read(fn, strip_white=TRUE, follow_url=TRUE))
-test_that("split value", {
+test_that("follow_url", {
   expect_equivalent(res[["a"]], list(k="v", `bad nested ref`=paste0("file://", fn)))
   expect_warning(kvh::kvh_read(fn, strip_white=TRUE, follow_url=TRUE), "kvh_read: detected circular reference to file ")
 })
 unlink(fn)
+unlink(fn2)
+
+# test that an error in followed link empties correctly the set of visited files and thus does not pollute subsequent kvh_read() calls
+fn2=tempfile(pattern = "file", tmpdir = wd, fileext = ".kvh")
+fc=file(fn2, "wb")
+cat("a\tfile://non_existing_file.zzz", "\n", sep="", file=fc)
+close(fc)
+test_that("follow_url with erroneous file", {
+  expect_error(kvh::kvh_read(fn2, follow_url=TRUE), regexp="non_existing_file.zzz")
+  expect_error(
+    expect_no_warning(kvh::kvh_read(fn2, follow_url=TRUE))
+  )
+})
+unlink(fn2)
+unlink(wd)
 
 # test key skipping
 rs=kvh::kvh_read(fexample["hello_salut.kvh"], keys2skip=list(c("salutation", "en")))

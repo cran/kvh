@@ -240,7 +240,7 @@ list_line kvh_read(std::ifstream& fin, size_t lev, size_t* ln, const std::string
             return ll;
         }
         kv=kvh_parse_kv(line, lev, strip_white, split_str);
-//Rcout << "kv.key=" << kv.key << "\n";
+        //Rcout << "kv.key=" << kv.key << "\n";
         ln_save=ln[0];
         // check if the key is to skip
         if (keys2skip.size() > 0) {
@@ -261,7 +261,7 @@ list_line kvh_read(std::ifstream& fin, size_t lev, size_t* ln, const std::string
                 }
             }
         }
-//print(wrap(List::create(_["l"]=line, _["k"]=kv.key, _["v"]=kv.val)));
+        //print(wrap(List::create(_["l"]=line, _["k"]=kv.key, _["v"]=kv.val)));
         read_stream=kv.tab_found;
         if (!kv.tab_found) {
             // tab is absent => we have to go deeper in the hierarchy level
@@ -278,13 +278,13 @@ list_line kvh_read(std::ifstream& fin, size_t lev, size_t* ln, const std::string
             if (cval.size() == 1) {
                 std::string sval=as<std::string>(cval[0]);
                 if (sval.substr(0, 7) == "file://") {
-//Rcout << "follow_url; lev=" << lev << "; kv.key=" << kv.key << "; sval=" << sval << "\n";
+                    //Rcout << "follow_url; lev=" << lev << "; kv.key=" << kv.key << "; sval=" << sval << "\n";
                     sval=sval.substr(7);
-//Rcout << "trying to kvh_read '" << sval << "'\n";
+                    //Rcout << "trying to kvh_read '" << sval << "'\n";
                     kv.val=kvh_read(sval, comment_str, strip_white, skip_blank, split_str, follow_url, List(subk2skip.begin(), subk2skip.end()));
-//Rcout << "done.\n";
+                    //Rcout << "done.\n";
                     if (kv.val.isNULL()) {
-//Rcout << "set kv.val back to file://...\n";
+                        //Rcout << "set kv.val back to file://...\n";
                         kv.val=cval;
                     }
                 }
@@ -330,16 +330,9 @@ RObject kvh_read(std::string fn, const std::string& comment_str="", const bool s
         stop("kvh_read: file name is empty");
     // read kvh file and return its content in a nested named list of character vectors
     if (comment_str.find('\t') < std::string::npos || comment_str.find('\n') < std::string::npos) {
-//Rcout << "find tab=" << comment_str.find('\t') << "\n";
-//Rcout << "find nl=" << comment_str.find('\n') << "\n";
-/*        if (bchar) {
-            free(bchar);
-            bchar=NULL;
-        }
-*/
         stop("kvh_read: parameter 'comment_str' cannot have tabulation or new line characters in it");
     }
-//Rcout << "follow_url=" << follow_url << "\n";
+    //Rcout << "follow_url=" << follow_url << "\n";
     int n = keys2skip.size();
     std::vector<std::vector<std::string>> vk2skip(n);
     for (int i = 0; i < n; ++i) {
@@ -348,51 +341,49 @@ RObject kvh_read(std::string fn, const std::string& comment_str="", const bool s
 
     // check for nested references if follow_url=true
     static std::set<std::string> read_files;
-//Rcout << "cwd='" << get_current_dir_name() << "'\n";
-//std::ostream_iterator<std::string> sout(Rcout, ";\n");
     static std::vector<std::string> dirw;
+    /*Rcout << "read_files=" << std::endl;
+    for (auto &f : read_files)
+        Rcout << "\t- " << f << std::endl;
+    */
     bool absp=is_ap(fn);
     std::string dn=dir_n(fn);
     std::string npath;
     if (follow_url) {
         dirw.push_back(absp || dirw.size() == 0 ? dn : dirw[dirw.size()-1]+"/"+dn);
-//Rcout << "fn='" << fn << "'; read_files=\n";
-//copy(read_files.begin(), read_files.end(), sout);
         fn=dirw[dirw.size()-1]+"/"+base_n(fn);
-//Rcout << "fnew=" << fn << "\n";
-        npath=norm_p(fn);
+        //Rcout << "fnew=" << fn << "\n";
+        if (EXISTS(fn.c_str())) {
+            npath=norm_p(fn);
+        } else {
+            read_files.clear();
+            dirw.clear();
+            stop("kvh_read: cannot normalize the path '%s' as it does not exist.", fn);
+        }
         if (read_files.count(npath)) {
-            warning("kvh_read: detected circular reference to file '%s' via '%s'", npath, fn);
-/*            if (bchar) {
-                free(bchar);
-                bchar=NULL;
-            }
-*/
+            warning("kvh_read: detected circular reference to file '%s' via '%s'. This time, the file is skipped.", npath, fn);
             return R_NilValue;
         }
         read_files.insert(npath);
     }
     // open file for binary reading
-    //FILE *fin;
     std::ifstream fin;
     list_line ll;
     size_t ln=0; // running line number in kvh file
-    //fin=fopen(fn.data() , "rb");
     fin.open(fn.c_str(), std::ios_base::binary);
     if (!fin.good()) {
         if (follow_url) {
-            read_files.erase(npath);
-            dirw.pop_back();
+            read_files.clear();
+            dirw.clear();
+            //Rcout << "freed read_files from npath=" << npath << std::endl;
+        } else {
+            //Rcout << "no read_files freeing" << std::endl;
         }
-/*        if (bchar) {
-            free(bchar);
-            bchar=NULL;
-        }
-*/
+        /*for (auto &f : read_files)
+            Rcout << "\t- " << f << std::endl;
+        */
         stop("kvh_read: cannot open file '%s' for reading for following reason: %s", fn, std::strerror(errno));
     }
-//    if (!bchar)
-//        bchar=(char*) malloc(bsize*sizeof(char));
     ll=kvh_read(fin, 0, &ln, comment_str, strip_white, skip_blank, split_str, follow_url, vk2skip);
     fin.close();
     if (follow_url) {
@@ -400,10 +391,5 @@ RObject kvh_read(std::string fn, const std::string& comment_str="", const bool s
         dirw.pop_back();
     }
     ll.res.attr("file")=fn;
-/*    if (bchar) {
-        free(bchar);
-        bchar=NULL;
-    }
-*/
     return ll.res;
 }
